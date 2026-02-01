@@ -63,72 +63,55 @@ fi
 if [ ! -f "${CONFIG_FILE}" ]; then
   mkdir -p "${CONFIG_DIR}"
 
-  # Resolve model (default to Opus 4.5)
-  MODEL_VALUE="${MODEL:-anthropic/claude-opus-4-5}"
-
   # ---------------------------------------------------------------------------
-  # Build the JSON with a heredoc.  Channel blocks are conditionally appended
-  # below.
+  # Build openclaw.json via node — avoids trailing-comma / placeholder hacks
+  # that break OpenClaw's strict JSON validator.
   # ---------------------------------------------------------------------------
-  cat > "${CONFIG_FILE}" <<EOF
-{
-  "agent": {
-    "model": "${MODEL_VALUE}"
-  },
-  "gateway": {
-    "bind": "0.0.0.0",
-    "port": 18789,
-    "auth": {
-      "mode": "token",
-      "token": "${TOKEN}"
-    }
-  },
-  "channels": {
-EOF
-
-  # --- Telegram ----------------------------------------------------------
-  if [ -n "${TELEGRAM_BOT_TOKEN}" ]; then
-    cat >> "${CONFIG_FILE}" <<EOF
-    "telegram": {
-      "botToken": "${TELEGRAM_BOT_TOKEN}",
-      "allowFrom": ["*"]
-    },
-EOF
-  fi
-
-  # --- Discord -----------------------------------------------------------
-  if [ -n "${DISCORD_BOT_TOKEN}" ]; then
-    cat >> "${CONFIG_FILE}" <<EOF
-    "discord": {
-      "token": "${DISCORD_BOT_TOKEN}",
-      "dm": {
-        "allowFrom": ["*"]
+  TOKEN="${TOKEN}" MODEL="${MODEL}" CONFIG_FILE="${CONFIG_FILE}" \
+  TELEGRAM_BOT_TOKEN="${TELEGRAM_BOT_TOKEN:-}" \
+  DISCORD_BOT_TOKEN="${DISCORD_BOT_TOKEN:-}" \
+  SLACK_BOT_TOKEN="${SLACK_BOT_TOKEN:-}" \
+  SLACK_APP_TOKEN="${SLACK_APP_TOKEN:-}" \
+  node -e "
+    const cfg = {
+      agents: { defaults: { model: { primary: process.env.MODEL || 'anthropic/claude-opus-4-5' } } },
+      gateway: {
+        mode: 'local',
+        bind: 'lan',
+        port: 18789,
+        auth: { token: process.env.TOKEN },
+        controlUi: {
+          enabled: true,
+          allowInsecureAuth: true,
+          dangerouslyDisableDeviceAuth: true   // required in Docker — no device identity available (see openclaw #1679)
+        }
       }
-    },
-EOF
-  fi
+    };
 
-  # --- Slack -------------------------------------------------------------
-  if [ -n "${SLACK_BOT_TOKEN}" ] && [ -n "${SLACK_APP_TOKEN}" ]; then
-    cat >> "${CONFIG_FILE}" <<EOF
-    "slack": {
-      "botToken": "${SLACK_BOT_TOKEN}",
-      "appToken": "${SLACK_APP_TOKEN}"
-    },
-EOF
-  fi
+    const ch = {};
+    if (process.env.TELEGRAM_BOT_TOKEN)
+      ch.telegram = { botToken: process.env.TELEGRAM_BOT_TOKEN, dmPolicy: 'pairing' };
+    if (process.env.DISCORD_BOT_TOKEN)
+      ch.discord  = { token: process.env.DISCORD_BOT_TOKEN, dm: { policy: 'pairing' } };
+    if (process.env.SLACK_BOT_TOKEN && process.env.SLACK_APP_TOKEN)
+      ch.slack    = { botToken: process.env.SLACK_BOT_TOKEN, appToken: process.env.SLACK_APP_TOKEN, dm: { policy: 'pairing' } };
 
-  # Close channels (strip trailing comma via a dummy empty object trick isn't
-  # great JSON — we use a _placeholder that we'll clean up)
-  cat >> "${CONFIG_FILE}" <<EOF
-    "_": null
-  }
-}
-EOF
+    if (Object.keys(ch).length) cfg.channels = ch;
+
+    require('fs').writeFileSync(process.env.CONFIG_FILE, JSON.stringify(cfg, null, 2) + '\n');
+    console.log('[openclaw-railway] wrote config ->', process.env.CONFIG_FILE);
+  "
 fi
 
 # ---------------------------------------------------------------------------
-# 4. Healthcheck shim — Railway needs /health to return 200 *before* the
+# 4. Run doctor --fix to auto-migrate any legacy/stale config keys.
+#    This is a no-op on a fresh config but saves us if openclaw ships another
+#    schema change in the future.
+# ---------------------------------------------------------------------------
+openclaw doctor --fix 2>&1 || true
+
+# ---------------------------------------------------------------------------
+# 5. Healthcheck shim — Railway needs /health to return 200 *before* the
 #    gateway is fully warm.  We run a tiny node one-liner in the background
 #    that answers 200 on /health and proxies everything else to the gateway
 #    once it's up.  This shim exits as soon as the gateway starts listening
@@ -180,7 +163,7 @@ tmp.on('error', (e) => {
 SHIM_PID=$!
 
 # ---------------------------------------------------------------------------
-# 5. Print the Control UI URL (user grabs this from Railway deploy logs)
+# 6. Print the Control UI URL (user grabs this from Railway deploy logs)
 # ---------------------------------------------------------------------------
 echo ""
 echo "============================================================"
@@ -198,7 +181,7 @@ echo "============================================================"
 echo ""
 
 # ---------------------------------------------------------------------------
-# 6. Export API keys so openclaw picks them up
+# 7. Export API keys so openclaw picks them up
 # ---------------------------------------------------------------------------
 export ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY}"
 if [ -n "${OPENAI_API_KEY}" ]; then
@@ -206,6 +189,6 @@ if [ -n "${OPENAI_API_KEY}" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 7. Boot the gateway  (exec replaces this shell — PID 1 is openclaw)
+# 8. Boot the gateway  (exec replaces this shell — PID 1 is openclaw)
 # ---------------------------------------------------------------------------
-exec openclaw gateway --port 18789 --bind 0.0.0.0 --verbose
+exec openclaw gateway --port 18789 --verbose
