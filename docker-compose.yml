@@ -1,0 +1,14 @@
+version: "3.8"
+
+services:
+  openclaw:
+    build: .
+    ports:
+      - "18789:18789"      # Control UI + WebSocket
+    env_file:
+      - .env
+    volumes:
+      # Persistent data (sessions, config, credentials).
+      # In Railway this is a mounted volume; locally it's just a directory.
+      - ./data:/data
+    restart: always

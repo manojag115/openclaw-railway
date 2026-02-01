@@ -1,0 +1,13 @@
+[build]
+# Build configuration for OpenClaw
+
+[deploy]
+# Deployment configuration
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 10
+
+[healthcheck]
+# Health check configuration (uncomment and configure as needed)
+# path = "/health"
+# timeout = 100
+# interval = 10
