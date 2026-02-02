@@ -1,4 +1,4 @@
-# openclaw-railways
+# openclaw-railway
 
 > **Run [OpenClaw](https://github.com/openclaw/openclaw) on [Railway](https://railway.com)** — a one-click, persistent, always-on deployment for your personal AI assistant.
 
