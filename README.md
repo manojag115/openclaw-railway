@@ -2,9 +2,9 @@
 
 > **Run [OpenClaw](https://github.com/openclaw/openclaw) on [Railway](https://railway.com)** — a one-click, persistent, always-on deployment for your personal AI assistant.
 
-[![Deploy on Railway](https://railway-button.svg.railway.app/deploy.svg)](https://railway.app/template/openclaw)
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/openclaw)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![CI](https://github.com/steipete/openclaw-railway/actions/workflows/ci.yml/badge.svg)](https://github.com/steipete/openclaw-railway/actions/workflows/ci.yml)
+[![CI](https://github.com/manojag115/openclaw-railway/actions/workflows/ci.yml/badge.svg)](https://github.com/manojag115/openclaw-railway/actions/workflows/ci.yml)
 
 ---
 
