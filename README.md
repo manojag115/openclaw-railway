@@ -2,7 +2,7 @@
 
 > **Run [OpenClaw](https://github.com/openclaw/openclaw) on [Railway](https://railway.com)** — a one-click, persistent, always-on deployment for your personal AI assistant.
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/openclaw)
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/manojag115/openclaw-railway)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/manojag115/openclaw-railway/actions/workflows/ci.yml/badge.svg)](https://github.com/manojag115/openclaw-railway/actions/workflows/ci.yml)
 
@@ -34,7 +34,7 @@ That's it. No Cloudflare account, no VPS, no local Docker required (unless you w
 
 ## Deploy to Railway (30 seconds)
 
-1. Click the **Deploy on Railway** button above (or use the direct URL: `https://railway.app/template/openclaw`).
+1. Click the **Deploy on Railway** button above.
 2. Set `ANTHROPIC_API_KEY` in the environment variables panel.
 3. Click **Deploy**.
 4. Wait for the build to finish (30–60 s). Railway will assign a `.up.railway.app` domain.
